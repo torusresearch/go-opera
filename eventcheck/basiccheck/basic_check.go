@@ -7,7 +7,6 @@ import (
 	base "github.com/Fantom-foundation/lachesis-base/eventcheck/basiccheck"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/Fantom-foundation/go-opera/evmcore"
 	"github.com/Fantom-foundation/go-opera/inter"
 	"github.com/Fantom-foundation/go-opera/opera"
 	"github.com/Fantom-foundation/go-opera/opera/params"
@@ -39,31 +38,31 @@ func New(config *opera.DagConfig) *Checker {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules
 func (v *Checker) validateTx(tx *types.Transaction) error {
-	// Transactions can't be negative. This may never happen using RLP decoded
-	// transactions but may occur if you create a transaction using the RPC.
-	if tx.Value().Sign() < 0 || tx.GasPrice().Sign() < 0 {
-		return ErrNegativeValue
-	}
-	// Ensure the transaction has more gas than the basic tx fee.
-	intrGas, err := evmcore.IntrinsicGas(tx.Data(), tx.To() == nil, true)
-	if err != nil {
-		return err
-	}
-	if tx.Gas() < intrGas {
-		return ErrIntrinsicGas
-	}
-	if tx.GasPrice().Cmp(params.MinGasPrice) < 0 {
-		return ErrUnderpriced
-	}
+	//// Transactions can't be negative. This may never happen using RLP decoded
+	//// transactions but may occur if you create a transaction using the RPC.
+	//if tx.Value().Sign() < 0 || tx.GasPrice().Sign() < 0 {
+	//	return ErrNegativeValue
+	//}
+	//// Ensure the transaction has more gas than the basic tx fee.
+	//intrGas, err := evmcore.IntrinsicGas(tx.Data(), tx.To() == nil, true)
+	//if err != nil {
+	//	return err
+	//}
+	//if tx.Gas() < intrGas {
+	//	return ErrIntrinsicGas
+	//}
+	//if tx.GasPrice().Cmp(params.MinGasPrice) < 0 {
+	//	return ErrUnderpriced
+	//}
 	return nil
 }
 
 func (v *Checker) checkTxs(e inter.EventPayloadI) error {
-	for _, tx := range e.Txs() {
-		if err := v.validateTx(tx); err != nil {
-			return err
-		}
-	}
+	//for _, tx := range e.Txs() {
+	//	if err := v.validateTx(tx); err != nil {
+	//		return err
+	//	}
+	//}
 	return nil
 }
 

@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/Fantom-foundation/lachesis-base/eventcheck/epochcheck"
-	"github.com/Fantom-foundation/lachesis-base/hash"
 	"github.com/Fantom-foundation/lachesis-base/inter/dag"
 	"github.com/Fantom-foundation/lachesis-base/inter/idx"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -144,17 +143,17 @@ func (v *Checker) Validate(de dag.Event) error {
 	if !verifySignature(e, addr) {
 		return ErrWrongEventSig
 	}
-	// pre-cache tx sig
-	for _, tx := range e.Txs() {
-		_, err := types.Sender(v.txSigner, tx)
-		if err != nil {
-			return ErrMalformedTxSig
-		}
-	}
-	// Merkle tree
-	if e.TxHash() != hash.Hash(types.DeriveSha(e.Txs())) {
-		return ErrWrongTxHash
-	}
+	//// pre-cache tx sig
+	//for _, tx := range e.Txs() {
+	//	_, err := types.Sender(v.txSigner, tx)
+	//	if err != nil {
+	//		return ErrMalformedTxSig
+	//	}
+	//}
+	//// Merkle tree
+	//if e.TxHash() != hash.Hash(types.DeriveSha(e.Txs())) {
+	//	return ErrWrongTxHash
+	//}
 
 	return nil
 }
