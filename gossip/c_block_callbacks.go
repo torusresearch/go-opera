@@ -48,7 +48,8 @@ func (s *Service) GetConsensusCallbacks() lachesis.ConsensusCallbacks {
 					if !e.NoTxs() {
 						// non-empty events only
 						confirmedEvents = append(confirmedEvents, e.ID())
-						s.occurredTxs.CollectConfirmedTxs(s.store.GetEventPayload(e.ID()).Txs())
+						payload := s.store.GetEventPayload(e.ID())
+						s.occurredTxs.CollectConfirmedTxs(payload.Txs())
 					}
 					creatorIdx := es.Validators.GetIdx(e.Creator())
 					prev := validatorHighestEvents[creatorIdx]
@@ -120,8 +121,10 @@ func (s *Service) GetConsensusCallbacks() lachesis.ConsensusCallbacks {
 					s.store.SetBlock(bs.Block, block)
 					s.store.SetBlockState(bs)
 
+					s.processedTxs.Mark(uint64(evmBlock.Transactions.Len()))
+					tps := s.processedTxs.Per(time.Second)
 					log.Info("New block", "index", bs.Block, "atropos", block.Atropos, "gas_used",
-						evmBlock.GasUsed, "skipped_txs", len(block.SkippedTxs), "txs", len(evmBlock.Transactions), "t", time.Since(start))
+						evmBlock.GasUsed, "skipped_txs", len(block.SkippedTxs), "txs", len(evmBlock.Transactions), "tps", tps, "t", time.Since(start))
 
 					// meter
 					return newValidators

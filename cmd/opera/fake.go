@@ -19,6 +19,12 @@ import (
 	"github.com/Fantom-foundation/go-opera/utils"
 )
 
+var TransactionsPerSecondFlag = cli.StringFlag{
+	Name: "tps",
+}
+var TxPayloadFlag = cli.StringFlag{
+	Name: "txpayload",
+}
 // FakeNetFlag enables special testnet, where validators are automatically created
 var FakeNetFlag = cli.StringFlag{
 	Name:  "fakenet",

@@ -2,6 +2,7 @@ package gossip
 
 import (
 	"fmt"
+	"github.com/Fantom-foundation/go-opera/utils/meter"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -104,6 +105,7 @@ type Service struct {
 	heavyCheckReader    HeavyCheckReader
 	gasPowerCheckReader GasPowerCheckReader
 	checkers            *eventcheck.Checkers
+	processedTxs        *meter.Meter
 	uniqueEventIDs      uniqueID
 
 	feed ServiceFeed
@@ -129,6 +131,7 @@ func NewService(ctx *node.ServiceContext, config *Config, store *Store, engine l
 		store:          store,
 		engine:         engine,
 		dagIndexer:     dagIndexer,
+		processedTxs:   meter.New(),
 		engineMu:       new(sync.RWMutex),
 		occurredTxs:    occuredtxs.New(txsRingBufferSize, types.NewEIP155Signer(config.Net.EvmChainConfig().ChainID)),
 		uniqueEventIDs: uniqueID{new(big.Int)},

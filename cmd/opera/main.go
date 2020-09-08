@@ -52,6 +52,8 @@ func init() {
 
 	// Flags for testing purpose.
 	testFlags = []cli.Flag{
+		TransactionsPerSecondFlag,
+		TxPayloadFlag,
 		FakeNetFlag,
 	}
 

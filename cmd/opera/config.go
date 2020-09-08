@@ -196,6 +196,12 @@ func gossipConfigWithFlags(ctx *cli.Context, src gossip.Config) gossip.Config {
 	setGPO(ctx, &cfg.GPO)
 	setTxPool(ctx, &cfg.TxPool)
 
+	if ctx.GlobalIsSet(TxPayloadFlag.Name) {
+		cfg.Emitter.TxPayloadSize = ctx.GlobalUint64(TxPayloadFlag.Name)
+	}
+	if ctx.GlobalIsSet(TransactionsPerSecondFlag.Name) {
+		cfg.Emitter.TPS = ctx.GlobalUint64(TransactionsPerSecondFlag.Name)
+	}
 	if ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
 		cfg.Net.NetworkID = ctx.GlobalUint64(utils.NetworkIdFlag.Name)
 	}

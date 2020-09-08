@@ -31,6 +31,10 @@ type Config struct {
 
 	MaxTxsFromSender int `json:"maxTxsFromSender"`
 
+	// throughput experimental testing
+	TPS           uint64
+	TxPayloadSize uint64
+
 	EpochTailLength idx.Frame `json:"epochTailLength"` // number of frames before event is considered epoch
 
 	MaxParents int `json:"maxParents"`
@@ -47,7 +51,7 @@ func DefaultEmitterConfig() Config {
 		VersionToPublish: _params.VersionWithMeta(),
 
 		EmitIntervals: EmitIntervals{
-			Min:                200 * time.Millisecond,
+			Min:                5 * time.Millisecond,
 			Max:                12 * time.Minute,
 			Confirming:         200 * time.Millisecond,
 			SelfForkProtection: 30 * time.Minute, // should be at least 2x of MaxEmitInterval

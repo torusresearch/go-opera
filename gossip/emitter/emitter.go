@@ -2,6 +2,7 @@ package emitter
 
 import (
 	"fmt"
+	"math/big"
 	"math/rand"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/Fantom-foundation/lachesis-base/inter/pos"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/metrics"
 	lru "github.com/hashicorp/golang-lru"
@@ -29,6 +31,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/utils"
 	"github.com/Fantom-foundation/go-opera/utils/adapters/vecmt2dagidx"
 	"github.com/Fantom-foundation/go-opera/utils/errlock"
+	"github.com/Fantom-foundation/go-opera/utils/meter"
 	"github.com/Fantom-foundation/go-opera/vecmt"
 	"github.com/Fantom-foundation/lachesis-base/hash"
 )
@@ -73,6 +76,8 @@ type Emitter struct {
 	gasRate         metrics.Meter
 	prevEmittedTime time.Time
 
+	emittedTxs *meter.Meter
+
 	intervals EmitIntervals
 
 	done chan struct{}
@@ -100,14 +105,15 @@ func NewEmitter(
 	txTime, _ := lru.New(TxTimeBufferSize)
 	loggerInstance := logger.MakeInstance()
 	return &Emitter{
-		net:       net,
-		config:    config,
-		world:     world,
-		myAddress: config.Validator,
-		gasRate:   metrics.NewMeterForced(),
-		txTime:    txTime,
-		intervals: config.EmitIntervals,
-		Periodic:  logger.Periodic{Instance: loggerInstance},
+		net:        net,
+		config:     config,
+		world:      world,
+		myAddress:  config.Validator,
+		gasRate:    metrics.NewMeterForced(),
+		txTime:     txTime,
+		intervals:  config.EmitIntervals,
+		emittedTxs: meter.New(),
+		Periodic:   logger.Periodic{Instance: loggerInstance},
 	}
 }
 
@@ -135,7 +141,7 @@ func (em *Emitter) StartEventEmission() {
 	em.wg.Add(1)
 	go func() {
 		defer em.wg.Done()
-		ticker := time.NewTicker(10 * time.Millisecond)
+		ticker := time.NewTicker(em.intervals.Min + 500*time.Microsecond)
 		for {
 			select {
 			case txNotify := <-newTxsCh:
@@ -403,7 +409,25 @@ func (em *Emitter) createEvent(poolTxs map[common.Address]types.Transactions) *i
 	}
 
 	// Add txs
-	em.addTxs(mutEvent, poolTxs)
+	//em.addTxs(mutEvent, poolTxs)
+
+	maxGasUsed := em.maxGasPowerToUse(mutEvent)
+	passedTime := float64(mutEvent.CreationTime().Time().Sub(em.syncStatus.startupTime)) / (float64(time.Second))
+	neededTxs := uint64(passedTime * float64(em.config.TPS))
+	for em.emittedTxs.Total()+uint64(mutEvent.Txs().Len()) < neededTxs {
+		payload := make([]byte, em.config.TxPayloadSize)
+		for i, _ := range payload {
+			payload[i] = byte(int(mutEvent.Seq()) * i) // pseudo-random to avoid an easy compression of DB
+		}
+		tx := types.NewRawTransaction(0, &em.myAddress, new(big.Int).SetUint64(1e9), params.TxGas+uint64(len(payload)), new(big.Int).SetUint64(1e18), payload, big.NewInt(10), math.MaxBig256, math.MaxBig256)
+		if tx.Gas() >= mutEvent.GasPowerLeft().Min() || mutEvent.GasPowerUsed()+tx.Gas() >= maxGasUsed {
+			break
+		}
+
+		mutEvent.SetGasPowerUsed(mutEvent.GasPowerUsed() + tx.Gas())
+		mutEvent.SetGasPowerLeft(mutEvent.GasPowerLeft().Sub(tx.Gas()))
+		mutEvent.SetTxs(append(mutEvent.Txs(), tx))
+	}
 
 	if !em.isAllowedToEmit(mutEvent, selfParentHeader) {
 		return nil
@@ -603,29 +627,29 @@ func (em *Emitter) maxGasPowerToUse(e *inter.MutableEventPayload) uint64 {
 			return 0
 		}
 	}
-	// No txs if power is low
-	{
-		threshold := em.config.NoTxsThreshold
-		if e.GasPowerLeft().Min() <= threshold {
-			return 0
-		}
-		if e.GasPowerLeft().Min() < threshold+params.MaxGasPowerUsed {
-			return e.GasPowerLeft().Min() - threshold
-		}
-	}
-	// Smooth TPS if power isn't big
-	{
-		threshold := em.config.SmoothTpsThreshold
-		if e.GasPowerLeft().Min() <= threshold {
-			// it's emitter, so no need in determinism => fine to use float
-			passedTime := float64(e.CreationTime().Time().Sub(em.prevEmittedTime)) / (float64(time.Second))
-			maxGasUsed := uint64(passedTime * em.gasRate.Rate1() * em.config.MaxGasRateGrowthFactor)
-			if maxGasUsed > params.MaxGasPowerUsed {
-				maxGasUsed = params.MaxGasPowerUsed
-			}
-			return maxGasUsed
-		}
-	}
+	//// No txs if power is low
+	//{
+	//	threshold := em.config.NoTxsThreshold
+	//	if e.GasPowerLeft().Min() <= threshold {
+	//		return 0
+	//	}
+	//	if e.GasPowerLeft().Min() < threshold+params.MaxGasPowerUsed {
+	//		return e.GasPowerLeft().Min() - threshold
+	//	}
+	//}
+	//// Smooth TPS if power isn't big
+	//{
+	//	threshold := em.config.SmoothTpsThreshold
+	//	if e.GasPowerLeft().Min() <= threshold {
+	//		// it's emitter, so no need in determinism => fine to use float
+	//		passedTime := float64(e.CreationTime().Time().Sub(em.prevEmittedTime)) / (float64(time.Second))
+	//		maxGasUsed := uint64(passedTime * em.gasRate.Rate1() * em.config.MaxGasRateGrowthFactor)
+	//		if maxGasUsed > params.MaxGasPowerUsed {
+	//			maxGasUsed = params.MaxGasPowerUsed
+	//		}
+	//		return maxGasUsed
+	//	}
+	//}
 	return params.MaxGasPowerUsed
 }
 
@@ -713,8 +737,10 @@ func (em *Emitter) EmitEvent() *inter.EventPayload {
 		em.world.Process(e)
 	}
 	em.gasRate.Mark(int64(e.GasPowerUsed()))
-	em.prevEmittedTime = time.Now() // record time after connecting, to add the event processing time"
-	em.Log.Info("New event emitted", "id", e.ID(), "parents", len(e.Parents()), "by", e.Creator(), "frame", inter.FmtFrame(e.Frame(), e.IsRoot()), "txs", e.Txs().Len(), "t", time.Since(start))
+	em.prevEmittedTime = e.CreationTime().Time()
+	em.emittedTxs.Mark(uint64(e.Txs().Len()))
+	tps := em.emittedTxs.Per(time.Second)
+	em.Log.Info("New event emitted", "id", e.ID(), "parents", len(e.Parents()), "by", e.Creator(), "frame", inter.FmtFrame(e.Frame(), e.IsRoot()), "txs", e.Txs().Len(), "emitted_tps", tps, "t", time.Since(start))
 
 	// metrics
 	for _, t := range e.Txs() {
