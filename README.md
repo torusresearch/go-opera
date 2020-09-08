@@ -1,6 +1,6 @@
-# Opera 
+# Experimental Opera 
 
-EVM-compatible chain secured by the Lachesis consensus algorithm.
+This version of Opera is a testing/benchmarking platform, it is not safe to use.
 
 ## Building the source
 
@@ -176,3 +176,11 @@ cd demo/
 ./start.sh # start the Opera processes
 ./stop.sh # stop the demo and erase the chain data
 ```
+
+### Creation of dummy transactions
+
+```shell
+opera --tps=50000 --txpayload=10000
+```
+This combination of flags means "emit no more than 50000 transactions per second, place 10000 bytes of payload into each transaction"
+
