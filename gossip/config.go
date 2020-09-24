@@ -25,9 +25,7 @@ type (
 		TxPool  evmcore.TxPoolConfig
 		StoreConfig
 
-		TxIndex             bool // Whether to enable indexing transactions and receipts or not
-		DecisiveEventsIndex bool // Whether to enable indexing events which decide blocks or not
-		EventLocalTimeIndex bool // Whether to enable indexing arrival time of events or not
+		TxIndex bool // Whether to enable indexing transactions and receipts or not
 
 		// Protocol options
 		Protocol ProtocolConfig
@@ -79,8 +77,7 @@ func DefaultConfig(network opera.Config) Config {
 		TxPool:      evmcore.DefaultTxPoolConfig(),
 		StoreConfig: DefaultStoreConfig(),
 
-		TxIndex:             true,
-		DecisiveEventsIndex: false,
+		TxIndex: true,
 
 		Protocol: ProtocolConfig{
 			LatencyImportance:    60,

@@ -2,7 +2,6 @@ package gossip
 
 import (
 	"fmt"
-	"github.com/Fantom-foundation/go-opera/utils/meter"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -38,6 +37,7 @@ import (
 	"github.com/Fantom-foundation/go-opera/inter"
 	"github.com/Fantom-foundation/go-opera/logger"
 	"github.com/Fantom-foundation/go-opera/opera"
+	"github.com/Fantom-foundation/go-opera/utils/meter"
 	"github.com/Fantom-foundation/go-opera/vecmt"
 )
 
@@ -107,6 +107,8 @@ type Service struct {
 	checkers            *eventcheck.Checkers
 	processedTxs        *meter.Meter
 	uniqueEventIDs      uniqueID
+
+	currentEventProcessing hash.Event
 
 	feed ServiceFeed
 

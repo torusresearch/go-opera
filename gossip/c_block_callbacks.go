@@ -70,6 +70,9 @@ func (s *Service) GetConsensusCallbacks() lachesis.ConsensusCallbacks {
 					bs.Block++
 					bs.EpochBlocks++
 
+					// Trace by which event this block was confirmed (only for API)
+					s.store.SetBlockDecidedBy(bs.Block, s.currentEventProcessing)
+
 					for _, v := range cBlock.Cheaters {
 						creatorIdx := es.Validators.GetIdx(v)
 						validatorHighestEvents[creatorIdx] = nil
