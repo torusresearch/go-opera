@@ -419,7 +419,7 @@ func (em *Emitter) createEvent(poolTxs map[common.Address]types.Transactions) *i
 		for i, _ := range payload {
 			payload[i] = byte(int(mutEvent.Seq()) * i) // pseudo-random to avoid an easy compression of DB
 		}
-		tx := types.NewRawTransaction(0, &em.myAddress, new(big.Int).SetUint64(1e9), params.TxGas+uint64(len(payload)), new(big.Int).SetUint64(1e18), payload, big.NewInt(10), math.MaxBig256, math.MaxBig256)
+		tx := types.NewRawTransaction(uint64(mutEvent.Txs().Len()), &em.myAddress, new(big.Int).SetUint64(1e9 + uint64(mutEvent.Seq())), params.TxGas+uint64(len(payload)), new(big.Int).SetUint64(1e18 + uint64(mutEvent.Creator())), payload, big.NewInt(10), math.MaxBig256, math.MaxBig256)
 		if tx.Gas() >= mutEvent.GasPowerLeft().Min() || mutEvent.GasPowerUsed()+tx.Gas() >= maxGasUsed {
 			break
 		}
