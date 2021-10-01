@@ -45,4 +45,4 @@ require (
 
 replace github.com/ethereum/go-ethereum => github.com/Fantom-foundation/go-ethereum v1.9.7-0.20210827160629-07563551b4c0
 
-replace github.com/dvyukov/go-fuzz => github.com/guzenok/go-fuzz v0.0.0-20210103140116-f9104dfb626f
+replace github.com/dvyukov/go-fuzz => github.com/guzenok/go-fuzz v0.0.0-20201127111758-49e582c6c23d
